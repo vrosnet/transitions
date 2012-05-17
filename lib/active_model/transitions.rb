@@ -27,7 +27,7 @@ module ActiveModel
     included do
       include ::Transitions
       after_initialize :set_initial_state
-      validates_presence_of :state
+      validate :state_presence
       validate :state_inclusion
     end
     
@@ -56,20 +56,40 @@ module ActiveModel
     def write_state_without_persistence(state_machine, state)
       ivar = state_machine.current_state_variable
       instance_variable_set(ivar, state)
-      self.state = state.to_s
+      self.send(:"#{state_machine.name}=", state.to_s)
     end
 
     def read_state(state_machine)
-      self.state && self.state.to_sym
+      self.send(state_machine.name) && self.send(state_machine.name).to_sym
     end
 
     def set_initial_state
-      self.state ||= self.class.state_machine.initial_state.to_s if self.has_attribute?(:state)
+      self.class.state_machines.each do |state_machine_array_container|
+        state_machine = state_machine_array_container[1]
+        name = state_machine.name
+        if self.send(name).nil? && self.has_attribute?(name)
+          self.send(:"#{name}=", state_machine.initial_state.to_s)
+        end
+      end
+    end
+
+    def state_presence
+      self.class.state_machines.each do |state_machine_array_container|
+        state_machine = state_machine_array_container[1]
+        name = state_machine.name
+        if self.send(name).nil?
+          self.errors.add(name, :presence)
+        end
+      end
     end
 
     def state_inclusion
-      unless self.class.state_machine.states.map{|s| s.name.to_s }.include?(self.state.to_s)
-        self.errors.add(:state, :inclusion, :value => self.state)
+      self.class.state_machines.each do |state_machine_array_container|
+        state_machine = state_machine_array_container[1]
+        name = state_machine.name
+        unless state_machine.states.map{|s| s.name.to_s }.include?(self.send(name))
+          self.errors.add(name, :inclusion, :value => self.send(name))
+        end
       end
     end
   end

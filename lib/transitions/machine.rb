@@ -44,6 +44,7 @@ module Transitions
     end
 
     def fire_event(event, record, persist, *args)
+      event = event.gsub(/^#{self.name}_/, '').to_sym
       state_index[record.current_state(@name)].call_action(:exit, record)
       begin
         if new_state = @events[event].fire(record, nil, *args)

@@ -27,12 +27,16 @@ module Transitions
     def initialize(machine, name, options = {}, &block)
       @machine, @name, @transitions = machine, name, []
       if machine
-        machine.klass.send(:define_method, "#{name}!") do |*args|
-          machine.fire_event(name, self, true, *args)
+        combined_name = name
+        if machine.name != :default
+          combined_name = "#{machine.name}_#{name}"
+        end
+        machine.klass.send(:define_method, "#{combined_name}!") do |*args|
+          machine.fire_event(combined_name, self, true, *args)
         end
 
-        machine.klass.send(:define_method, name.to_s) do |*args|
-          machine.fire_event(name, self, false, *args)
+        machine.klass.send(:define_method, combined_name) do |*args|
+          machine.fire_event(combined_name, self, false, *args)
         end
       end
       update(options, &block)
