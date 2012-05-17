@@ -58,8 +58,8 @@ module Transitions
       state_machines[name].states.map(&:name).sort_by {|x| x.to_s}
     end
 
-    def define_state_query_method(state_name)
-      name = "#{state_name}?"
+    def define_state_query_method(machine_name, state_name)
+      name = "#{machine_name}_#{state_name}?"
       undef_method(name) if method_defined?(name)
       define_method(name) { current_state.to_s == %(#{state_name}) }
     end
